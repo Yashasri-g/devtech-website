@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { ArrowRight, Mail, Phone, MapPin } from 'lucide-react';
+import React, { useState } from 'react';
 
 const contactInfo = [
   {
@@ -35,6 +36,46 @@ const colorClasses = {
 };
 
 export default function ContactSection() {
+  const [form, setForm] = useState({
+    firstName: '',
+    lastName: '',
+    email: '',
+    company: '',
+    message: ''
+  });
+  const [loading, setLoading] = useState(false);
+  const [success, setSuccess] = useState<string|null>(null);
+  const [error, setError] = useState<string|null>(null);
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    setForm({ ...form, [e.target.name]: e.target.value });
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setSuccess(null);
+    setError(null);
+    try {
+      const res = await fetch('/api/contact', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(form)
+      });
+      if (res.ok) {
+        setSuccess('Message sent successfully!');
+        setForm({ firstName: '', lastName: '', email: '', company: '', message: '' });
+      } else {
+        const data = await res.json();
+        setError(data.error || 'Failed to send message.');
+      }
+    } catch (err) {
+      setError('Failed to send message.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <section id="contact" className="py-16 px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-purple-50 to-blue-50 relative overflow-hidden">
       {/* 3D Background Elements */}
@@ -67,48 +108,67 @@ export default function ContactSection() {
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <form onSubmit={handleSubmit}>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium text-gray-700">First Name</label>
+                      <Input 
+                        name="firstName"
+                        value={form.firstName}
+                        onChange={handleChange}
+                        placeholder="John" 
+                        className="border-gray-200 focus:border-purple-500 transform hover:scale-105 transition-all duration-300" 
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium text-gray-700">Last Name</label>
+                      <Input 
+                        name="lastName"
+                        value={form.lastName}
+                        onChange={handleChange}
+                        placeholder="Doe" 
+                        className="border-gray-200 focus:border-purple-500 transform hover:scale-105 transition-all duration-300" 
+                      />
+                    </div>
+                  </div>
                   <div className="space-y-2">
-                    <label className="text-sm font-medium text-gray-700">First Name</label>
+                    <label className="text-sm font-medium text-gray-700">Email</label>
                     <Input 
-                      placeholder="John" 
+                      name="email"
+                      type="email" 
+                      value={form.email}
+                      onChange={handleChange}
+                      placeholder="john@company.com" 
                       className="border-gray-200 focus:border-purple-500 transform hover:scale-105 transition-all duration-300" 
                     />
                   </div>
                   <div className="space-y-2">
-                    <label className="text-sm font-medium text-gray-700">Last Name</label>
+                    <label className="text-sm font-medium text-gray-700">Company</label>
                     <Input 
-                      placeholder="Doe" 
+                      name="company"
+                      value={form.company}
+                      onChange={handleChange}
+                      placeholder="Your Company Name" 
                       className="border-gray-200 focus:border-purple-500 transform hover:scale-105 transition-all duration-300" 
                     />
                   </div>
-                </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-gray-700">Email</label>
-                  <Input 
-                    type="email" 
-                    placeholder="john@company.com" 
-                    className="border-gray-200 focus:border-purple-500 transform hover:scale-105 transition-all duration-300" 
-                  />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-gray-700">Company</label>
-                  <Input 
-                    placeholder="Your Company Name" 
-                    className="border-gray-200 focus:border-purple-500 transform hover:scale-105 transition-all duration-300" 
-                  />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-gray-700">Message</label>
-                  <Textarea 
-                    placeholder="Tell us about your project or how we can help..." 
-                    className="border-gray-200 focus:border-purple-500 min-h-[120px] transform hover:scale-105 transition-all duration-300"
-                  />
-                </div>
-                <Button className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white transform hover:scale-105 hover:shadow-lg transition-all duration-300">
-                  Send Message
-                  <ArrowRight className="ml-2 h-4 w-4" />
-                </Button>
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-gray-700">Message</label>
+                    <Textarea 
+                      name="message"
+                      value={form.message}
+                      onChange={handleChange}
+                      placeholder="Tell us about your project or how we can help..." 
+                      className="border-gray-200 focus:border-purple-500 min-h-[120px] transform hover:scale-105 transition-all duration-300"
+                    />
+                  </div>
+                  {success && <div className="text-green-600 font-medium">{success}</div>}
+                  {error && <div className="text-red-600 font-medium">{error}</div>}
+                  <Button type="submit" disabled={loading} className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white transform hover:scale-105 hover:shadow-lg transition-all duration-300">
+                    {loading ? 'Sending...' : 'Send Message'}
+                    <ArrowRight className="ml-2 h-4 w-4" />
+                  </Button>
+                </form>
               </CardContent>
             </Card>
           </div>
